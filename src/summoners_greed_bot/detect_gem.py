@@ -21,22 +21,22 @@ class DetectGem:
 
 class DetectMonitor:
     def __init__(self):
-        self.monitors = [
-            cv2.imread(str(path), 0)
+        self.monitors = {
+            path: cv2.imread(str(path), 0)
             for path in Path('resources').glob('monitor*.png')
-        ]
+        }
 
     def is_present(self, img):
         img = cv2.imread(str(img), 0)
         # Cut off the right bottom quadrant (speed up processing!)
         img = img[img.shape[0]//2:, img.shape[1]//2:]
 
-        for x in self.monitors:
+        for path, x in self.monitors.items():
             res = find_subimages(img, x)
             if res:
                 return res
 
-        return None
+        return []
 
 
 if __name__ == '__main__':
@@ -45,12 +45,12 @@ if __name__ == '__main__':
 
     tmp = DetectMonitor()
 
-    for path in Path('../../tests/monitor/').glob('*.png'):
+    for path in Path('../../tests/monitor/').rglob('*.png'):
         print(path, ' --> ', tmp.is_present(path))
         count += 1
-
-    for path in Path('../../tests/seller/').glob('*.png'):
-        print(path, ' --> ', tmp.is_present(path))
-        count += 1
+    #
+    # for path in Path('../../tests/seller/').glob('*.png'):
+    #     print(path, ' --> ', tmp.is_present(path))
+    #     count += 1
 
     print(f'Time taken: {time() - start:0.2} for {count} entries')
