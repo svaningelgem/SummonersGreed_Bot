@@ -1,6 +1,3 @@
-from dataclasses import dataclass
-from typing import Any, Tuple
-
 import win32con
 import win32gui
 

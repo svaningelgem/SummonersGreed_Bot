@@ -3,7 +3,6 @@ from time import time
 
 import cv2
 
-
 counter = 0
 def find_match(small_image, large_image):
     global counter
