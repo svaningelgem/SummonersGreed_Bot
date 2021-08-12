@@ -2,7 +2,7 @@ from abc import ABC
 from enum import Enum, auto
 from pathlib import Path
 from time import time
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -199,10 +199,28 @@ class SceneInterpreter:
         raise NoSceneFound
 
     @property
-    def location(self):
-        # TODO: need to interpret the scaling that happened too!
+    def location(self) -> Tuple[int, int, int, int]:
+        """
+        This returns the average location of the button/stuff you want to find.
+        Coordinates are vs the window.
 
-        return self.last_detector.last_location
+        Returns: tuple(left, top, width, height)
+        """
+        try:
+            scaling_height, scaling_width = self.last_detector._get_scale_slices(*self.img.shape[:2])
+            l, t, b, r = [
+                int(sum(x) / len(x))
+                for x in zip(*self.last_detector.last_location)
+            ]
+
+            return (
+                l + scaling_width.start,
+                t + scaling_height.start,
+                b - l,
+                r - t,
+            )
+        except (AttributeError, KeyError):
+            return None
 
 
 if __name__ == '__main__':
