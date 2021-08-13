@@ -83,14 +83,10 @@ class BlueStacksWindow:
         win32gui.PostMessage(self.child_hwnd, win32con.WM_LBUTTONUP, 0, lParam)
 
 
-def find_bluestacks_window() -> BlueStacksWindow:
-    return BlueStacksWindow()
-
-
 if __name__ == '__main__':
     import cv2
     cv2.imwrite(
         'output.png',
-        find_bluestacks_window()
+        BlueStacksWindow()
         .take_screenshot()
     )

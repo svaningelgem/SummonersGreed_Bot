@@ -6,9 +6,8 @@ from typing import Dict, Optional, Tuple
 
 import cv2
 import numpy as np
-from subimage import find_subimages
 
-from summoners_greed_bot.temp import _locateAll_opencv
+from summoners_greed_bot.find_subimage import _locateAll_opencv
 
 
 def _get_image(img):
@@ -82,9 +81,7 @@ class Detector(ABC):
     def is_present(self, inside_this_image):
         img = self._get_scaled_image(inside_this_image)
 
-        self._last_location = find_subimages(img, self.image_to_find)
-        if not self._last_location:
-            self._last_location = list(_locateAll_opencv(self.image_to_find, img, confidence=0.8))
+        self._last_location = list(_locateAll_opencv(self.image_to_find, img, confidence=0.8))
 
         return self.last_location
 
@@ -208,16 +205,16 @@ class SceneInterpreter:
         """
         try:
             scaling_height, scaling_width = self.last_detector._get_scale_slices(*self.img.shape[:2])
-            l, t, b, r = [
+            l, t, w, h = [
                 int(sum(x) / len(x))
                 for x in zip(*self.last_detector.last_location)
             ]
-
+            # cv2.imwrite('scaled_img.png', self.last_detector._get_scaled_image(self.img))
             return (
                 l + scaling_width.start,
                 t + scaling_height.start,
-                b - l,
-                r - t,
+                w,
+                h,
             )
         except (AttributeError, KeyError):
             return None

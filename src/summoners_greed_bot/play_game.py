@@ -3,22 +3,24 @@ from time import sleep
 import cv2
 
 from summoners_greed_bot.detectors import Detected, NoSceneFound, SceneInterpreter
-from summoners_greed_bot.find_window import find_bluestacks_window
+from summoners_greed_bot.find_window import BlueStacksWindow
 
-SLEEP_X_SECONDS = 5
-SLEEP_X_SECONDS = 1
-
-
-seller_counter = 0
+CHECK_GAME_EVERY_X_SECONDS = 3
+SAVE_IMAGE_EVERY_X_SECONDS = 120
 
 
 def main():
-    bluestacks_window = find_bluestacks_window()
+    save_counter = 0
+
+    bluestacks_window = BlueStacksWindow()
     while True:
-        sleep(SLEEP_X_SECONDS)  # Take an action every x seconds to prevent stressing the 'idle' system
+        sleep(CHECK_GAME_EVERY_X_SECONDS)  # Take an action every x seconds to prevent stressing the 'idle' system
 
         screenshot = bluestacks_window.take_screenshot()
-        cv2.imwrite('output.png', screenshot)
+
+        save_counter += 1
+        if save_counter % (SAVE_IMAGE_EVERY_X_SECONDS // CHECK_GAME_EVERY_X_SECONDS) == 0:
+            cv2.imwrite('output.png', screenshot)
 
         scene = SceneInterpreter(screenshot)
 
