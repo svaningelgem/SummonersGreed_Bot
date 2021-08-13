@@ -1,13 +1,19 @@
+import logging
+import math
 from abc import ABC
+from collections import namedtuple
 from enum import Enum, auto
 from pathlib import Path
 from time import time
-from typing import Dict, Optional, Tuple
+from typing import Dict, Generator, List, Optional, Union
 
 import cv2
 import numpy as np
 
+from summoners_greed_bot import logger
 from summoners_greed_bot.find_subimage import _locateAll_opencv
+
+Rect = namedtuple('Rect', 'x y w h')
 
 
 def _get_image(img):
@@ -30,19 +36,20 @@ def _get_image(img):
 class Detector(ABC):
     IMAGE_TO_FIND = None
     counter = 0
+    _confidence = 0.75
 
     def __init__(self):
         self.image_to_find = _get_image(self.IMAGE_TO_FIND)
         self._last_width_height = None
-        self._last_location = None
+        self._last_locations = None
 
     @property
     def last_width_height(self):
         return self._last_width_height
 
     @property
-    def last_location(self):
-        return self._last_location
+    def last_locations(self):
+        return self._last_locations
 
     def _rescale(self, h, w):
         return 0, h, 0, w
@@ -50,17 +57,19 @@ class Detector(ABC):
     def _get_scale_slices(self, h, w):
         tpl = self._rescale(h, w)
 
+        h, w = int(h), int(w)
+
         if not isinstance(tpl, tuple):
             tpl = (tpl, h, 0, w)
         elif len(tpl) == 1:
-            tpl = (tpl[0], h, 0, w)
+            tpl = (*tpl, h, 0, w)
         elif len(tpl) == 2:
             tpl = (*tpl, 0, w)
         elif len(tpl) == 3:
             tpl = (*tpl, w)
 
-        height_slice = slice(tpl[0], tpl[1])
-        width_slice = slice(tpl[2], tpl[3])
+        height_slice = slice(int(tpl[0]), int(tpl[1]) or h)
+        width_slice = slice(int(tpl[2]), int(tpl[3]) or w)
 
         return height_slice, width_slice
 
@@ -78,15 +87,43 @@ class Detector(ABC):
 
         return img
 
+    @staticmethod
+    def _calc_distance(a, b):
+        return math.hypot(a[0] - b[0], a[1] - b[1])
+
+    def _group_locations(self, locations) -> Union[List[Rect], Generator[Rect, None, None]]:
+        if not locations:
+            return []
+
+        groups = {}
+        for loc in locations:
+            for group, lst in groups.items():
+                if self._calc_distance(group, loc) < 20:
+                    lst.append(loc)
+                    break
+            else:
+                groups[loc] = [loc]
+
+        for lst in groups.values():
+            yield Rect(*[
+                int(sum(x) / len(x))
+                for x in zip(*lst)
+            ])
+
     def is_present(self, inside_this_image):
         img = self._get_scaled_image(inside_this_image)
 
-        # cv2.imwrite("needle.png", self.image_to_find)
-        # cv2.imwrite("haystack.png", img)
+        if logger.isEnabledFor(logging.DEBUG):
+            cv2.imwrite("needle.png", self.image_to_find)
+            cv2.imwrite("haystack.png", img)
 
-        self._last_location = list(_locateAll_opencv(self.image_to_find, img, confidence=0.75))
+        self._last_locations = list(
+            self._group_locations(
+                _locateAll_opencv(self.image_to_find, img, confidence=self._confidence)
+            )
+        )
 
-        return self.last_location
+        return bool(self._last_locations)
 
     def _dump(self, img):
         Detector.counter += 1
@@ -94,12 +131,30 @@ class Detector(ABC):
         return img
 
 
-# class Gem(Detector):
-#     IMAGE_TO_FIND = 'resources/gem_icon_visible.png'
-#
-#     def _rescale(self, h, w):
-#         # Top right part of the image
-#         return 0, h // 6, w - w // 4, 0
+class GemsAreAvailable(Detector):
+    IMAGE_TO_FIND = 'resources/gem_icon_visible.png'
+
+    _confidence = 0.8
+
+    def _rescale(self, h, w):
+        # Top right part of the image
+        return 0, h // 6, w - w // 4, 0
+
+
+class ClickOnGem(Detector):
+    IMAGE_TO_FIND = 'resources/gem_found.png'
+
+    def _rescale(self, h, w):
+        # Top right part of the image
+        return 0, h, w // 2, 0
+
+
+class CloseGemScreen(Detector):
+    IMAGE_TO_FIND = 'resources/close_gem_screen.png'
+
+    def _rescale(self, h, w):
+        # Top right part of the image
+        return 0, h / 7, 3 * w / 4
 
 
 class Monitor(Detector):
@@ -161,7 +216,9 @@ class SellerOkay(Detector):
 
 
 class Detected(Enum):
-    Gem = auto()
+    GemsAreAvailable = auto()
+    ClickOnGem = auto()
+    CloseGemScreen = auto()
     Monitor = auto()
     GameFinished = auto()
     MonsterSetup = auto()
@@ -181,6 +238,9 @@ class SceneInterpreter:
             for name, cls in globals().items()
             if isinstance(cls, type) and issubclass(cls, Detector) and cls is not Detector
         }
+        # Make sure this one is always evaluated LAST!
+        cls.all_detectors.pop('CloseGemScreen', None)
+        cls.all_detectors['CloseGemScreen'] = CloseGemScreen()
 
         return super().__new__(cls)
 
@@ -199,7 +259,7 @@ class SceneInterpreter:
         raise NoSceneFound
 
     @property
-    def location(self) -> Tuple[int, int, int, int]:
+    def locations(self) -> Generator[Rect, None, None]:
         """
         This returns the average location of the button/stuff you want to find.
         Coordinates are vs the window.
@@ -208,31 +268,28 @@ class SceneInterpreter:
         """
         try:
             scaling_height, scaling_width = self.last_detector._get_scale_slices(*self.img.shape[:2])
-            l, t, w, h = [
-                int(sum(x) / len(x))
-                for x in zip(*self.last_detector.last_location)
-            ]
-            # cv2.imwrite('scaled_img.png', self.last_detector._get_scaled_image(self.img))
-            return (
-                l + scaling_width.start,
-                t + scaling_height.start,
-                w,
-                h,
-            )
+            for loc in self.last_detector.last_locations:
+                yield Rect(
+                    loc.x + scaling_width.start,
+                    loc.y + scaling_height.start,
+                    loc.w,
+                    loc.h,
+                )
         except (AttributeError, KeyError):
             return None
 
 
 if __name__ == '__main__':
+    debug = True
     start = time()
     count = 0
 
-    tmp = Seller()
+    tmp = ClickOnGem()
 
-    for path in Path('../../tests/seller').rglob('out*.png'):
+    for path in Path('../../tests/get_gems_from_achievements').rglob('*.png'):
         if 'debug' in path.name: continue
 
-        print(path, ' --> ', tmp.is_present(path))
+        print(path, ' --> ', tmp.is_present(path), ' // ', tmp.last_locations)
         count += 1
     #
     # for path in Path('../../tests/seller/').glob('*.png'):

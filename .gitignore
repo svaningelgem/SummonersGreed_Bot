@@ -3,3 +3,5 @@
 /src/summoners_greed_bot/*.png
 .pytest_cache
 /tests/*.png
+/scripts/*.png
+/src/summoners_greed_bot/screenshots/

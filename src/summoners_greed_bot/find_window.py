@@ -1,8 +1,12 @@
+import time
+
 import numpy as np
 import win32api
 import win32con
 import win32gui
 import win32ui
+
+from summoners_greed_bot.detectors import Rect
 
 
 class BlueStacksWindow:
@@ -27,12 +31,12 @@ class BlueStacksWindow:
     def __init__(self):
         self._setup_hwnds()
 
-        rect = win32gui.GetWindowRect(self.hwnd)
+        def _get_rect(hwnd):
+            l, t, b, r = win32gui.GetWindowRect(hwnd)
+            return Rect(l, t, b - l, r - t)
 
-        self.x = rect[0]
-        self.y = rect[1]
-        self.w = rect[2] - rect[0]
-        self.h = rect[3] - rect[1]
+        self.rect_main = _get_rect(self.hwnd)
+        self.rect_child = _get_rect(self.child_hwnd)
 
         self.un_minimize()
         # self.set_foreground()
@@ -47,23 +51,23 @@ class BlueStacksWindow:
             win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
 
     def take_screenshot(self) -> np.ndarray:
-        hDC = win32gui.GetWindowDC(self.hwnd)
+        hDC = win32gui.GetWindowDC(self.child_hwnd)
         myDC = win32ui.CreateDCFromHandle(hDC)
         newDC = myDC.CreateCompatibleDC()
 
         myBitMap = win32ui.CreateBitmap()
-        myBitMap.CreateCompatibleBitmap(myDC, self.w, self.h)
+        myBitMap.CreateCompatibleBitmap(myDC, self.rect_child.w, self.rect_child.h)
 
         newDC.SelectObject(myBitMap)
 
-        newDC.BitBlt((0, 0), (self.w, self.h), myDC, (0, 0), win32con.SRCCOPY)
+        newDC.BitBlt((0, 0), (self.rect_child.w, self.rect_child.h), myDC, (0, 0), win32con.SRCCOPY)
 
         myBitMap.Paint(newDC)
         # windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 3)
 
         signedIntsArray = myBitMap.GetBitmapBits(True)
         img = np.frombuffer(signedIntsArray, dtype='uint8')
-        img.shape = (self.h, self.w, 4)
+        img.shape = (self.rect_child.h, self.rect_child.w, 4)
 
         win32gui.DeleteObject(myBitMap.GetHandle())
 
@@ -78,8 +82,11 @@ class BlueStacksWindow:
         lParam = win32api.MAKELONG(int(x), int(y))
 
         win32gui.PostMessage(self.child_hwnd, win32con.WM_MOUSEMOVE, 0, lParam)
+        time.sleep(0.1)
 
         win32gui.PostMessage(self.child_hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam)
+        time.sleep(0.1)
+
         win32gui.PostMessage(self.child_hwnd, win32con.WM_LBUTTONUP, 0, lParam)
 
 
