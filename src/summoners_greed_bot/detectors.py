@@ -81,7 +81,10 @@ class Detector(ABC):
     def is_present(self, inside_this_image):
         img = self._get_scaled_image(inside_this_image)
 
-        self._last_location = list(_locateAll_opencv(self.image_to_find, img, confidence=0.8))
+        # cv2.imwrite("needle.png", self.image_to_find)
+        # cv2.imwrite("haystack.png", img)
+
+        self._last_location = list(_locateAll_opencv(self.image_to_find, img, confidence=0.75))
 
         return self.last_location
 

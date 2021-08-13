@@ -9,6 +9,34 @@ CHECK_GAME_EVERY_X_SECONDS = 3
 SAVE_IMAGE_EVERY_X_SECONDS = 120
 
 
+def act_on_screenshot(bluestacks_window, screenshot):
+    scene = SceneInterpreter(screenshot)
+
+    try:
+        to_do = scene.what_is_here
+        if to_do in (
+                Detected.Monitor,
+                Detected.GameFinished,
+                Detected.MonsterSetup,
+                Detected.SelectNewGame,
+                Detected.SellerOkay,
+                Detected.Seller,
+        ):
+            # Click the detected button
+            x, y, w, h = scene.location
+
+            new_x = x + w / 2
+            new_y = y + h / 2
+
+            # In case of the seller: click the buy-button instead!
+            if to_do == Detected.Seller:
+                new_x += 250
+
+            bluestacks_window.click(new_x, new_y)
+    except NoSceneFound:
+        pass
+
+
 def main():
     save_counter = 0
 
@@ -22,32 +50,11 @@ def main():
         if save_counter % (SAVE_IMAGE_EVERY_X_SECONDS // CHECK_GAME_EVERY_X_SECONDS) == 0:
             cv2.imwrite('output.png', screenshot)
 
-        scene = SceneInterpreter(screenshot)
-
-        try:
-            to_do = scene.what_is_here
-            if to_do in (
-                Detected.Monitor,
-                Detected.GameFinished,
-                Detected.MonsterSetup,
-                Detected.SelectNewGame,
-                Detected.SellerOkay,
-                Detected.Seller,
-            ):
-                # Click the detected button
-                x, y, w, h = scene.location
-
-                new_x = x + w / 2
-                new_y = y + h / 2
-
-                # In case of the seller: click the buy-button instead!
-                if to_do == Detected.Seller:
-                    new_x += 250
-
-                bluestacks_window.click(new_x, new_y)
-        except NoSceneFound:
-            pass
+        act_on_screenshot(bluestacks_window, screenshot)
 
 
 if __name__ == '__main__':
-    main()
+    act_on_screenshot(
+        None,
+        cv2.imread('../../tests/monitor/BlueStacks-2021-08-13 06_54_45.png')
+    )

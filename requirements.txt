@@ -1,2 +1,2 @@
-git+https://github.com/svaningelgem/subimage
 pywin32
+opencv-python
