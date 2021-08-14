@@ -20,8 +20,9 @@ def act_on_screenshot(bluestacks_window, screenshot):
     try:
         to_do = scene.what_is_here
 
+        logger.debug('We detected "%s"', to_do.name)
         if logger.isEnabledFor(logging.DEBUG):
-            cv2.imwrite("screenshot.png", screenshot)
+            cv2.imwrite("debug_screenshot.png", screenshot)
 
         # Click the detected button
         for idx, (x, y, w, h) in enumerate(scene.locations):
@@ -51,8 +52,8 @@ def main():
 
         save_counter += 1
         if (
-            logger.isEnabledFor(logging.DEBUG)
-            and save_counter % (SAVE_IMAGE_EVERY_X_SECONDS // CHECK_GAME_EVERY_X_SECONDS) == 0
+            # logger.isEnabledFor(logging.DEBUG) and
+            save_counter % (SAVE_IMAGE_EVERY_X_SECONDS // CHECK_GAME_EVERY_X_SECONDS) == 0
         ):
             output = Path(__file__).parent / datetime.now().strftime('screenshots/%Y%m%d/%H/%M%S.png')
             output.parent.mkdir(parents=True, exist_ok=True)

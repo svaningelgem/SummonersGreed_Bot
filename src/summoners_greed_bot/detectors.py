@@ -39,7 +39,15 @@ class Detector(ABC):
     _confidence = 0.75
 
     def __init__(self):
-        self.image_to_find = _get_image(self.IMAGE_TO_FIND)
+        self.image_to_find = []
+        if not isinstance(self.IMAGE_TO_FIND, (list, tuple)):
+            self.IMAGE_TO_FIND = [self.IMAGE_TO_FIND]
+
+        for img in self.IMAGE_TO_FIND:
+            self.image_to_find.append(
+                _get_image(img)
+            )
+
         self._last_width_height = None
         self._last_locations = None
 
@@ -114,14 +122,18 @@ class Detector(ABC):
         img = self._get_scaled_image(inside_this_image)
 
         if logger.isEnabledFor(logging.DEBUG):
-            cv2.imwrite("needle.png", self.image_to_find)
-            cv2.imwrite("haystack.png", img)
+            for idx, i2f in enumerate(self.image_to_find):
+                cv2.imwrite(f"debug_needle{idx}.png", i2f)
+            cv2.imwrite("debug_haystack.png", img)
 
-        self._last_locations = list(
-            self._group_locations(
-                _locateAll_opencv(self.image_to_find, img, confidence=self._confidence)
+        self._last_locations = []
+        locs = []
+        for needle in self.image_to_find:
+            locs.extend(
+                _locateAll_opencv(needle, img, confidence=self._confidence)
             )
-        )
+
+        self._last_locations = list(self._group_locations(locs))
 
         return bool(self._last_locations)
 
@@ -129,32 +141,6 @@ class Detector(ABC):
         Detector.counter += 1
         # cv2.imwrite(f'output_{Detector.counter}.png', img)
         return img
-
-
-class GemsAreAvailable(Detector):
-    IMAGE_TO_FIND = 'resources/gem_icon_visible.png'
-
-    _confidence = 0.8
-
-    def _rescale(self, h, w):
-        # Top right part of the image
-        return 0, h // 6, w - w // 4, 0
-
-
-class ClickOnGem(Detector):
-    IMAGE_TO_FIND = 'resources/gem_found.png'
-
-    def _rescale(self, h, w):
-        # Top right part of the image
-        return 0, h, w // 2, 0
-
-
-class CloseGemScreen(Detector):
-    IMAGE_TO_FIND = 'resources/close_gem_screen.png'
-
-    def _rescale(self, h, w):
-        # Top right part of the image
-        return 0, h / 7, 3 * w / 4
 
 
 class Monitor(Detector):
@@ -215,6 +201,35 @@ class SellerOkay(Detector):
         return bottom_of_image, bottom_of_image + height_of_button
 
 
+class GemsAreAvailable(Detector):
+    IMAGE_TO_FIND = 'resources/gem_icon_visible.png'
+
+    _confidence = 0.8
+
+    def _rescale(self, h, w):
+        # Top right part of the image
+        return 0, h // 6, w - w // 4, 0
+
+
+class ClickOnGem(Detector):
+    IMAGE_TO_FIND = [
+        'resources/gem_found_1.png',
+        'resources/gem_found_2.png',
+    ]
+
+    def _rescale(self, h, w):
+        # Top right part of the image
+        return 0, h, w // 2, 0
+
+
+class CloseGemScreen(Detector):
+    IMAGE_TO_FIND = 'resources/close_gem_screen.png'
+
+    def _rescale(self, h, w):
+        # Top right part of the image
+        return 0, h / 7, 3 * w / 4
+
+
 class Detected(Enum):
     GemsAreAvailable = auto()
     ClickOnGem = auto()
@@ -238,9 +253,6 @@ class SceneInterpreter:
             for name, cls in globals().items()
             if isinstance(cls, type) and issubclass(cls, Detector) and cls is not Detector
         }
-        # Make sure this one is always evaluated LAST!
-        cls.all_detectors.pop('CloseGemScreen', None)
-        cls.all_detectors['CloseGemScreen'] = CloseGemScreen()
 
         return super().__new__(cls)
 

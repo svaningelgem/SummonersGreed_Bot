@@ -93,7 +93,7 @@ class BlueStacksWindow:
 if __name__ == '__main__':
     import cv2
     cv2.imwrite(
-        'output.png',
+        'debug_output.png',
         BlueStacksWindow()
         .take_screenshot()
     )
