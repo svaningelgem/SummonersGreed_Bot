@@ -1,3 +1,4 @@
+import ctypes
 import time
 
 import numpy as np
@@ -50,24 +51,25 @@ class BlueStacksWindow:
         if win32gui.IsIconic(self.hwnd):
             win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
 
-    def take_screenshot(self) -> np.ndarray:
-        hDC = win32gui.GetWindowDC(self.child_hwnd)
+    def take_screenshot(self, use_index: int = 2, use_parent: bool = False) -> np.ndarray:
+        hwnd = self.hwnd if use_parent else self.child_hwnd
+        rect = self.rect_main if use_parent else self.rect_child
+
+        hDC = win32gui.GetWindowDC(hwnd)
         myDC = win32ui.CreateDCFromHandle(hDC)
         newDC = myDC.CreateCompatibleDC()
 
         myBitMap = win32ui.CreateBitmap()
-        myBitMap.CreateCompatibleBitmap(myDC, self.rect_child.w, self.rect_child.h)
+        myBitMap.CreateCompatibleBitmap(myDC, rect.w, rect.h)
 
         newDC.SelectObject(myBitMap)
-
-        newDC.BitBlt((0, 0), (self.rect_child.w, self.rect_child.h), myDC, (0, 0), win32con.SRCCOPY)
-
-        myBitMap.Paint(newDC)
-        # windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 3)
+        # newDC.BitBlt((0, 0), (rect.w, rect.h), myDC, (0, 0), win32con.SRCCOPY)
+        # myBitMap.Paint(newDC)
+        ctypes.windll.user32.PrintWindow(hwnd, newDC.GetSafeHdc(), use_index)
 
         signedIntsArray = myBitMap.GetBitmapBits(True)
         img = np.frombuffer(signedIntsArray, dtype='uint8')
-        img.shape = (self.rect_child.h, self.rect_child.w, 4)
+        img.shape = (rect.h, rect.w, 4)
 
         win32gui.DeleteObject(myBitMap.GetHandle())
 

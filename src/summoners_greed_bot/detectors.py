@@ -144,7 +144,10 @@ class Detector(ABC):
 
 
 class Monitor(Detector):
-    IMAGE_TO_FIND = 'resources/monitor_no_thanks.png'
+    IMAGE_TO_FIND = [
+        'resources/monitor_no_thanks.png',
+        'resources/monitor_no_thanks2.png',
+    ]
 
     def _rescale(self, h, w):
         half_of_height = h // 2
@@ -181,7 +184,9 @@ class SelectNewGame(Detector):
 
 
 class Seller(Detector):
-    IMAGE_TO_FIND = 'resources/seller_no_thanks.png'
+    IMAGE_TO_FIND = [
+        'resources/seller_no_thanks.png',
+    ]
 
     def _rescale(self, h, w):
         half_of_height = h // 2
@@ -200,15 +205,15 @@ class SellerOkay(Detector):
 
         return bottom_of_image, bottom_of_image + height_of_button
 
-
-class GemsAreAvailable(Detector):
-    IMAGE_TO_FIND = 'resources/gem_icon_visible.png'
-
-    _confidence = 0.8
-
-    def _rescale(self, h, w):
-        # Top right part of the image
-        return 0, h // 6, w - w // 4, 0
+#
+# class GemsAreAvailable(Detector):
+#     IMAGE_TO_FIND = 'resources/gem_icon_visible.png'
+#
+#     _confidence = 0.8
+#
+#     def _rescale(self, h, w):
+#         # Top right part of the image
+#         return 0, h // 6, w - w // 4, 0
 
 
 class ClickOnGem(Detector):

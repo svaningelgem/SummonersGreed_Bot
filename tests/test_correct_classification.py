@@ -3,9 +3,10 @@ from pathlib import Path
 import pytest
 
 from summoners_greed_bot import logger
-from summoners_greed_bot.detectors import ClickOnGem, CloseGemScreen, GameFinished, GemsAreAvailable, Monitor, \
-    MonsterSetup, \
-    SelectNewGame, Seller
+from summoners_greed_bot.detectors import ClickOnGem, CloseGemScreen, GameFinished, Monitor, \
+    MonsterSetup, SelectNewGame, Seller  # , GemsAreAvailable
+
+logger.setLevel('DEBUG')
 
 
 @pytest.mark.parametrize(
