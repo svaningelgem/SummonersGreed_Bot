@@ -23,7 +23,7 @@ def act_on_screenshot(bluestacks_window, screenshot):
     except NoSceneFound:
         return
 
-    logger.debug('We detected "%s"', to_do.name)
+    logger.info('We detected "%s"', to_do.name)
     if logger.isEnabledFor(logging.DEBUG):
         cv2.imwrite("debug_screenshot.png", screenshot)
 

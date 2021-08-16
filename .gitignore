@@ -5,3 +5,4 @@
 /tests/*.png
 /scripts/*.png
 /src/summoners_greed_bot/screenshots/
+*.log
