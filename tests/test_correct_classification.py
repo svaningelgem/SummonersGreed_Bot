@@ -23,6 +23,8 @@ logger.setLevel('DEBUG')
 def test_presence_or_not(cls, search_in_path, ignore):
     seen_paths = []
     checker = cls()
+    logger.debug('--------------------------------------- ---------------------------------------')
+    logger.debug('Checking positive cases:')
     for path in Path(search_in_path).glob('*.png'):
         seen_paths.append(path)
         if path.name in ignore:
@@ -32,6 +34,8 @@ def test_presence_or_not(cls, search_in_path, ignore):
 
         assert checker.is_present(path), f"{path} should be a {search_in_path}!"
 
+    logger.debug('--------------------------------------- ---------------------------------------')
+    logger.debug('Checking negative cases:')
     for path in Path('.').rglob('*.png'):
         if path in seen_paths or path.name in ignore or path.name.startswith('debug_'):
             continue
@@ -53,6 +57,8 @@ def test_gems_present():
     ('BlueStacks-2021-08-13 21_01_15', 2),
     ('BlueStacks-2021-08-13 21_01_32', 2),
     ('BlueStacks-2021-08-13 21_25_56', 2),
+    ('BlueStacks-2021-08-19 06_05_53', 0),
+    ('BlueStacks-2021-08-19 06_06_04', 3),
     ('rewards_available__just_1', 1),
     ('rewards_available__multiple', 2),
     ('screenshot', 1),

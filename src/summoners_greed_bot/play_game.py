@@ -1,8 +1,9 @@
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep
+from typing import Dict
 
 import cv2
 import numpy as np
@@ -13,6 +14,15 @@ from summoners_greed_bot.find_window import BlueStacksWindow
 
 CHECK_GAME_EVERY_X_SECONDS = 1.5
 SAVE_IMAGE_EVERY_X_SECONDS = 120
+
+
+class LastClick:
+    def __init__(self, x: int, y: int):
+        self.x = x
+        self.y = y
+        self.seen = datetime.now()
+
+last_saved_clicks: Dict[Detected, LastClick] = {}
 
 
 def act_on_screenshot(bluestacks_window, screenshot):
@@ -39,14 +49,23 @@ def act_on_screenshot(bluestacks_window, screenshot):
         if to_do == Detected.Seller:
             new_x += 250
 
+        last_saved_clicks[to_do] = LastClick(new_x, new_y)
+
         bluestacks_window.click(new_x, new_y)
 
 
 def main():
     save_counter = 0
+    same_screenshot_counter = 0
     prev_screenshot = None
 
     bluestacks_window = BlueStacksWindow()
+
+    def _click(e: LastClick) -> None:
+        bluestacks_window.click(e.x, e.y)
+        sleep(2)
+        e.seen = datetime.now()
+
     while True:
         sleep(CHECK_GAME_EVERY_X_SECONDS)  # Take an action every x seconds to prevent stressing the 'idle' system
 
@@ -54,13 +73,27 @@ def main():
 
         if prev_screenshot is not None and np.allclose(prev_screenshot, screenshot):
             # Computer is locked likely... Not going to try to do anything here!
-            # cv2.imwrite('screenshot1.png', screenshot)
-            # for loop in range(2):
-            #     for i, use_parent in product(range(4), (True, False)):
-            #         sleep(2)
-            #         ss = bluestacks_window.take_screenshot(i, use_parent)
-            #         cv2.imwrite(f'screenshot_loop_{loop}_i_{i}_up_{use_parent}.png', ss)
+            same_screenshot_counter += 1
+
+            if same_screenshot_counter > 5:  # 5 times the same screenshot... Let's assume we're locked.
+                same_screenshot_counter = 0
+
+                try:
+                    last_game_finished = last_saved_clicks[Detected.GameFinished].seen
+                    logger.info(f'last_game_finished: {last_game_finished}')
+                    if last_game_finished + timedelta(minutes=35) > datetime.now():
+                        continue
+                except KeyError:
+                    continue  # Ok, we don't even know this one yet!!
+
+                logger.info(f'Start clicking')
+                # Ok, game is likely finished. Start clicking away!
+                _click(last_saved_clicks[Detected.GameFinished])
+                _click(last_saved_clicks[Detected.SelectNewGame])
+                _click(last_saved_clicks[Detected.MonsterSetup])
             continue
+
+        same_screenshot_counter = 0
 
         prev_screenshot = screenshot
 
