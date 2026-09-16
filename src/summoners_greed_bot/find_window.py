@@ -68,7 +68,7 @@ class BlueStacksWindow:
         ctypes.windll.user32.PrintWindow(hwnd, newDC.GetSafeHdc(), use_index)
 
         signedIntsArray = myBitMap.GetBitmapBits(True)
-        img = np.frombuffer(signedIntsArray, dtype='uint8')
+        img = np.frombuffer(signedIntsArray, dtype="uint8")
         img.shape = (rect.h, rect.w, 4)
 
         win32gui.DeleteObject(myBitMap.GetHandle())
@@ -92,10 +92,7 @@ class BlueStacksWindow:
         win32gui.PostMessage(self.child_hwnd, win32con.WM_LBUTTONUP, 0, lParam)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import cv2
-    cv2.imwrite(
-        'debug_output.png',
-        BlueStacksWindow()
-        .take_screenshot()
-    )
+
+    cv2.imwrite("debug_output.png", BlueStacksWindow().take_screenshot())
