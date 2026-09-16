@@ -2,10 +2,10 @@ import logging
 import math
 from abc import ABC
 from collections import namedtuple
+from collections.abc import Generator
 from enum import Enum, auto
 from pathlib import Path
 from time import time
-from typing import Dict, Generator, List, Optional, Union
 
 import cv2
 import numpy as np
@@ -13,7 +13,7 @@ import numpy as np
 from summoners_greed_bot import logger
 from summoners_greed_bot.find_subimage import _locateAll_opencv
 
-Rect = namedtuple('Rect', 'x y w h')
+Rect = namedtuple("Rect", "x y w h")
 
 
 def _get_image(img):
@@ -44,9 +44,7 @@ class Detector(ABC):
             self.IMAGE_TO_FIND = [self.IMAGE_TO_FIND]
 
         for img in self.IMAGE_TO_FIND:
-            self.image_to_find.append(
-                _get_image(img)
-            )
+            self.image_to_find.append(_get_image(img))
 
         self._last_width_height = None
         self._last_locations = None
@@ -99,7 +97,7 @@ class Detector(ABC):
     def _calc_distance(a, b):
         return math.hypot(a[0] - b[0], a[1] - b[1])
 
-    def _group_locations(self, locations) -> Union[List[Rect], Generator[Rect, None, None]]:
+    def _group_locations(self, locations) -> list[Rect] | Generator[Rect, None, None]:
         if not locations:
             return []
 
@@ -113,10 +111,7 @@ class Detector(ABC):
                 groups[loc] = [loc]
 
         for lst in groups.values():
-            yield Rect(*[
-                int(sum(x) / len(x))
-                for x in zip(*lst)
-            ])
+            yield Rect(*[int(sum(x) / len(x)) for x in zip(*lst)])
 
     def is_present(self, inside_this_image):
         img = self._get_scaled_image(inside_this_image)
@@ -129,9 +124,7 @@ class Detector(ABC):
         self._last_locations = []
         locs = []
         for needle in self.image_to_find:
-            locs.extend(
-                _locateAll_opencv(needle, img, confidence=self._confidence)
-            )
+            locs.extend(_locateAll_opencv(needle, img, confidence=self._confidence))
 
         self._last_locations = list(self._group_locations(locs))
 
@@ -145,8 +138,8 @@ class Detector(ABC):
 
 class Monitor(Detector):
     IMAGE_TO_FIND = [
-        'resources/monitor_no_thanks.png',
-        'resources/monitor_no_thanks2.png',
+        "resources/monitor_no_thanks.png",
+        "resources/monitor_no_thanks2.png",
     ]
 
     def _rescale(self, h, w):
@@ -158,21 +151,21 @@ class Monitor(Detector):
 
 
 class GameFinished(Detector):
-    IMAGE_TO_FIND = 'resources/game_finished.png'
+    IMAGE_TO_FIND = "resources/game_finished.png"
 
     def _rescale(self, h, w):
-        return h // 2,
+        return (h // 2,)
 
 
 class MonsterSetup(Detector):
-    IMAGE_TO_FIND = 'resources/monster_setup.png'
+    IMAGE_TO_FIND = "resources/monster_setup.png"
 
     def _rescale(self, h, w):
         return h - h // 8
 
 
 class SelectNewGame(Detector):
-    IMAGE_TO_FIND = 'resources/select_new_game.png'
+    IMAGE_TO_FIND = "resources/select_new_game.png"
 
     def _rescale(self, h, w):
         bottom_of_image = h // 4
@@ -185,7 +178,7 @@ class SelectNewGame(Detector):
 
 class Seller(Detector):
     IMAGE_TO_FIND = [
-        'resources/seller_no_thanks.png',
+        "resources/seller_no_thanks.png",
     ]
 
     def _rescale(self, h, w):
@@ -197,13 +190,14 @@ class Seller(Detector):
 
 
 class SellerOkay(Detector):
-    IMAGE_TO_FIND = 'resources/seller_okay.png'
+    IMAGE_TO_FIND = "resources/seller_okay.png"
 
     def _rescale(self, h, w):
         bottom_of_image = h // 2
         height_of_button = h // 8
 
         return bottom_of_image, bottom_of_image + height_of_button
+
 
 #
 # class GemsAreAvailable(Detector):
@@ -218,8 +212,8 @@ class SellerOkay(Detector):
 
 class ClickOnGem(Detector):
     IMAGE_TO_FIND = [
-        'resources/gem_found_1.png',
-        'resources/gem_found_2.png',
+        "resources/gem_found_1.png",
+        "resources/gem_found_2.png",
     ]
 
     def _rescale(self, h, w):
@@ -228,7 +222,7 @@ class ClickOnGem(Detector):
 
 
 class CloseGemScreen(Detector):
-    IMAGE_TO_FIND = 'resources/close_gem_screen.png'
+    IMAGE_TO_FIND = "resources/close_gem_screen.png"
 
     def _rescale(self, h, w):
         # Top right part of the image
@@ -253,7 +247,7 @@ class NoSceneFound(Exception):
 
 class SceneInterpreter:
     def __new__(cls, *args, **kwargs):
-        cls.all_detectors: Dict[str, Detector] = {
+        cls.all_detectors: dict[str, Detector] = {
             name: cls()
             for name, cls in globals().items()
             if isinstance(cls, type) and issubclass(cls, Detector) and cls is not Detector
@@ -263,7 +257,7 @@ class SceneInterpreter:
 
     def __init__(self, image: np.ndarray):
         self.img = image
-        self.last_detector: Optional[Detector] = None
+        self.last_detector: Detector | None = None
 
     @property
     def what_is_here(self):
@@ -296,21 +290,22 @@ class SceneInterpreter:
             return None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     debug = True
     start = time()
     count = 0
 
     tmp = ClickOnGem()
 
-    for path in Path('../../tests/get_gems_from_achievements').rglob('*.png'):
-        if 'debug' in path.name: continue
+    for path in Path("../../tests/get_gems_from_achievements").rglob("*.png"):
+        if "debug" in path.name:
+            continue
 
-        print(path, ' --> ', tmp.is_present(path), ' // ', tmp.last_locations)
+        print(path, " --> ", tmp.is_present(path), " // ", tmp.last_locations)
         count += 1
     #
     # for path in Path('../../tests/seller/').glob('*.png'):
     #     print(path, ' --> ', tmp.is_present(path))
     #     count += 1
 
-    print(f'Time taken: {time() - start:0.2} for {count} entries')
+    print(f"Time taken: {time() - start:0.2} for {count} entries")

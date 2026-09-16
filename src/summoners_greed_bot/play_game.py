@@ -3,7 +3,6 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep
-from typing import Dict
 
 import cv2
 import numpy as np
@@ -22,7 +21,8 @@ class LastClick:
         self.y = y
         self.seen = datetime.now()
 
-last_saved_clicks: Dict[Detected, LastClick] = {}
+
+last_saved_clicks: dict[Detected, LastClick] = {}
 
 
 def act_on_screenshot(bluestacks_window, screenshot):
@@ -80,13 +80,13 @@ def main():
 
                 try:
                     last_game_finished = last_saved_clicks[Detected.GameFinished].seen
-                    logger.info(f'last_game_finished: {last_game_finished}')
+                    logger.info(f"last_game_finished: {last_game_finished}")
                     if last_game_finished + timedelta(minutes=35) > datetime.now():
                         continue
                 except KeyError:
                     continue  # Ok, we don't even know this one yet!!
 
-                logger.info(f'Start clicking')
+                logger.info("Start clicking")
                 # Ok, game is likely finished. Start clicking away!
                 _click(last_saved_clicks[Detected.GameFinished])
                 _click(last_saved_clicks[Detected.SelectNewGame])
@@ -102,16 +102,12 @@ def main():
             # logger.isEnabledFor(logging.DEBUG) and
             save_counter % (SAVE_IMAGE_EVERY_X_SECONDS // CHECK_GAME_EVERY_X_SECONDS) == 0
         ):
-            output = Path(__file__).parent / datetime.now().strftime('screenshots/%Y%m%d/%H/%M%S.png')
+            output = Path(__file__).parent / datetime.now().strftime("screenshots/%Y%m%d/%H/%M%S.png")
             output.parent.mkdir(parents=True, exist_ok=True)
             cv2.imwrite(str(output), screenshot)
-
 
         act_on_screenshot(bluestacks_window, screenshot)
 
 
-if __name__ == '__main__':
-    act_on_screenshot(
-        None,
-        cv2.imread('../../tests/monitor/BlueStacks-2021-08-13 06_54_45.png')
-    )
+if __name__ == "__main__":
+    act_on_screenshot(None, cv2.imread("../../tests/monitor/BlueStacks-2021-08-13 06_54_45.png"))
