@@ -1,6 +1,7 @@
 import sys
 
 import pywintypes
+
 from summoners_greed_bot import logger
 from summoners_greed_bot.play_game import main
 

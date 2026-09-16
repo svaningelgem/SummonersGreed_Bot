@@ -250,7 +250,9 @@ class SceneInterpreter:
         cls.all_detectors: dict[str, Detector] = {
             name: cls()
             for name, cls in globals().items()
-            if isinstance(cls, type) and issubclass(cls, Detector) and cls is not Detector
+            if isinstance(cls, type)
+            and issubclass(cls, Detector)
+            and cls is not Detector
         }
 
         return super().__new__(cls)
@@ -278,7 +280,9 @@ class SceneInterpreter:
         Returns: tuple(left, top, width, height)
         """
         try:
-            scaling_height, scaling_width = self.last_detector._get_scale_slices(*self.img.shape[:2])
+            scaling_height, scaling_width = self.last_detector._get_scale_slices(
+                *self.img.shape[:2]
+            )
             for loc in self.last_detector.last_locations:
                 yield Rect(
                     loc.x + scaling_width.start,
