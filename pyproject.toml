@@ -1,0 +1,16 @@
+[project]
+name = "summonersgreed-bot"
+version = "0.0.0"
+requires-python = ">=3.12"
+dependencies = [
+    "pywin32; sys_platform == 'win32'",
+    "opencv-python",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+
+[tool.uv]
+package = false
