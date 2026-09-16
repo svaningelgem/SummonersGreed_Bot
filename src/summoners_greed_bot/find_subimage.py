@@ -9,10 +9,15 @@ def _locateAll_opencv(needleImage, haystackImage, confidence=0.999):
 
     needleHeight, needleWidth = needleImage.shape[:2]
 
-    if haystackImage.shape[0] < needleImage.shape[0] or haystackImage.shape[1] < needleImage.shape[1]:
+    if (
+        haystackImage.shape[0] < needleImage.shape[0]
+        or haystackImage.shape[1] < needleImage.shape[1]
+    ):
         # avoid semi-cryptic OpenCV error below if bad size
         logger.debug(
-            "Wrong size (haystack %s has smaller dimensions than needle %s", haystackImage.shape, needleImage.shape
+            "Wrong size (haystack %s has smaller dimensions than needle %s",
+            haystackImage.shape,
+            needleImage.shape,
         )
         return
 

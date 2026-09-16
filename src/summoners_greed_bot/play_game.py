@@ -67,7 +67,9 @@ def main():
         e.seen = datetime.now()
 
     while True:
-        sleep(CHECK_GAME_EVERY_X_SECONDS)  # Take an action every x seconds to prevent stressing the 'idle' system
+        sleep(
+            CHECK_GAME_EVERY_X_SECONDS
+        )  # Take an action every x seconds to prevent stressing the 'idle' system
 
         screenshot = bluestacks_window.take_screenshot()
 
@@ -75,7 +77,9 @@ def main():
             # Computer is locked likely... Not going to try to do anything here!
             same_screenshot_counter += 1
 
-            if same_screenshot_counter > 5:  # 5 times the same screenshot... Let's assume we're locked.
+            if (
+                same_screenshot_counter > 5
+            ):  # 5 times the same screenshot... Let's assume we're locked.
                 same_screenshot_counter = 0
 
                 try:
@@ -100,9 +104,12 @@ def main():
         save_counter += 1
         if (
             # logger.isEnabledFor(logging.DEBUG) and
-            save_counter % (SAVE_IMAGE_EVERY_X_SECONDS // CHECK_GAME_EVERY_X_SECONDS) == 0
+            save_counter % (SAVE_IMAGE_EVERY_X_SECONDS // CHECK_GAME_EVERY_X_SECONDS)
+            == 0
         ):
-            output = Path(__file__).parent / datetime.now().strftime("screenshots/%Y%m%d/%H/%M%S.png")
+            output = Path(__file__).parent / datetime.now().strftime(
+                "screenshots/%Y%m%d/%H/%M%S.png"
+            )
             output.parent.mkdir(parents=True, exist_ok=True)
             cv2.imwrite(str(output), screenshot)
 
@@ -110,4 +117,6 @@ def main():
 
 
 if __name__ == "__main__":
-    act_on_screenshot(None, cv2.imread("../../tests/monitor/BlueStacks-2021-08-13 06_54_45.png"))
+    act_on_screenshot(
+        None, cv2.imread("../../tests/monitor/BlueStacks-2021-08-13 06_54_45.png")
+    )

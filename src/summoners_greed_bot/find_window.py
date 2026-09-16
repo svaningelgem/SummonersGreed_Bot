@@ -51,7 +51,9 @@ class BlueStacksWindow:
         if win32gui.IsIconic(self.hwnd):
             win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
 
-    def take_screenshot(self, use_index: int = 2, use_parent: bool = False) -> np.ndarray:
+    def take_screenshot(
+        self, use_index: int = 2, use_parent: bool = False
+    ) -> np.ndarray:
         hwnd = self.hwnd if use_parent else self.child_hwnd
         rect = self.rect_main if use_parent else self.rect_child
 
@@ -86,7 +88,9 @@ class BlueStacksWindow:
         win32gui.PostMessage(self.child_hwnd, win32con.WM_MOUSEMOVE, 0, lParam)
         time.sleep(0.1)
 
-        win32gui.PostMessage(self.child_hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam)
+        win32gui.PostMessage(
+            self.child_hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lParam
+        )
         time.sleep(0.1)
 
         win32gui.PostMessage(self.child_hwnd, win32con.WM_LBUTTONUP, 0, lParam)
